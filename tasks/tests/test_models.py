@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
+from time import sleep
 from employees.models import CustomUser
 from tasks.models import Task
 
@@ -57,17 +58,20 @@ class TaskModelTest(TestCase):
     def test_priority_validation(self):
         """Валидация приоритета."""
         # Приоритет должен быть от 1 до 10
-        task = Task(**self.task_data, priority=0)
+        self.task_data['priority'] = 0
+        task = Task(**self.task_data)
         with self.assertRaises(ValidationError):
             task.full_clean()
 
-        task = Task(**self.task_data, priority=11)
+        self.task_data['priority'] = 11
+        task = Task(**self.task_data)
         with self.assertRaises(ValidationError):
             task.full_clean()
 
         # Корректные значения
         for priority in [1, 5, 10]:
-            task = Task(**self.task_data, priority=priority)
+            self.task_data['priority'] = priority
+            task = Task(**self.task_data)
             try:
                 task.full_clean()
             except ValidationError:
@@ -77,7 +81,8 @@ class TaskModelTest(TestCase):
         """Валидация срока выполнения."""
         # Дедлайн в прошлом должен вызывать ошибку
         past_deadline = timezone.now() - timedelta(days=1)
-        task = Task(**self.task_data, deadline=past_deadline)
+        self.task_data['deadline'] = past_deadline
+        task = Task(**self.task_data)
 
         with self.assertRaises(ValidationError):
             task.full_clean()
@@ -137,11 +142,12 @@ class TaskModelTest(TestCase):
         overdue_task = Task.objects.create(
             title='Просроченная задача',
             executor=self.employee1,
-            deadline=timezone.now() - timedelta(days=1),
+            deadline=timezone.now() + timedelta(seconds=1),
             priority=5,
             status='in_progress',
             created_by=self.manager
         )
+        sleep(2)
         self.assertTrue(overdue_task.is_overdue)
 
         # Непросроченная задача
@@ -159,11 +165,12 @@ class TaskModelTest(TestCase):
         completed_task = Task.objects.create(
             title='Завершенная задача',
             executor=self.employee1,
-            deadline=timezone.now() - timedelta(days=1),
+            deadline=timezone.now() + timedelta(seconds=1),
             priority=5,
             status='completed',
             created_by=self.manager
         )
+        sleep(2)
         self.assertFalse(completed_task.is_overdue)
 
     def test_has_subtasks_property(self):
