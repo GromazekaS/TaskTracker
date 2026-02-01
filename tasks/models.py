@@ -75,6 +75,7 @@ class Task(models.Model):
         if self.parent_task and self.parent_task.parent_task:
             errors['parent_task'] = 'Подзадачи не могут иметь свои подзадачи'
 
+        # Это требование пока под сомнением
         if self.parent_task and self.executor:
             if self.parent_task.executor != self.executor:
                 errors['executor'] = 'Подзадача должна быть назначена тому же исполнителю, что и родительская задача'
