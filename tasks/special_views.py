@@ -3,10 +3,16 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Count, Q, Subquery, OuterRef
 from django.utils import timezone
+
+from employees.serializers import BusyEmployeeSerializer
 from tasks.models import Task
 from employees.models import CustomUser
-from tasks.serializers import TaskSerializer
-
+from tasks.serializers import (
+    TaskSerializer, ImportantTaskResponseSerializer,
+    PermissionErrorSerializer, AuthenticationErrorSerializer
+)
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 
 class BusyEmployeesView(APIView):
     """
@@ -15,6 +21,29 @@ class BusyEmployeesView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        summary='Список занятых сотрудников',
+        description="""
+        Возвращает список сотрудников, отсортированный по убыванию количества активных задач.
+        Активной считается задача со статусом "new" или "in_progress".
+        Для каждого сотрудника выводится общее число активных задач и их детальный список.
+        """,
+        responses={
+            200: OpenApiResponse(
+                response=BusyEmployeeSerializer(many=True),
+                description='Список важных задач с потенциальными исполнителями.'
+            ),
+            401: OpenApiResponse(
+                response=AuthenticationErrorSerializer,  # Используем ваш сериализатор
+                description='Требуется аутентификация.'
+            ),
+            403: OpenApiResponse(
+                response=PermissionErrorSerializer,      # Используем ваш сериализатор
+                description='Доступ запрещен.'
+            ),
+        },
+        tags=['Аналитика'],
+    )
     def get(self, request):
         # Подсчет активных задач для каждого сотрудника (статус 'new' или 'in_progress')
         busy_employees = CustomUser.objects.filter(
@@ -48,6 +77,38 @@ class ImportantTasksView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        summary='Поиск важных задач',
+        description="""
+        Находит "заблокированные" задачи.
+
+        **Критерий поиска:**
+        1. Задача имеет статус **"Новая"** (не взята в работу).
+        2. У задачи есть **минимум одна подзадача в статусе "В работе"**.
+
+        **Подбор исполнителей:**
+        Для каждой найденной задачи система предлагает потенциальных исполнителей:
+        1. **Наименее загруженный сотрудник** на данный момент.
+        2. **Сотрудник, выполняющий родительскую задачу** (если у него назначено не более чем на **2 активные задачи больше**, чем у наименее загруженного).
+
+        **Ответ:** Список объектов, каждый из которых содержит задачу, её срок и массив подходящих сотрудников с указанием причины.
+        """,
+        responses={
+            200: OpenApiResponse(
+                response=ImportantTaskResponseSerializer(many=True),
+                description='Список важных задач с потенциальными исполнителями.'
+            ),
+            401: OpenApiResponse(
+                response=AuthenticationErrorSerializer,  # Используем ваш сериализатор
+                description='Требуется аутентификация.'
+            ),
+            403: OpenApiResponse(
+                response=PermissionErrorSerializer,      # Используем ваш сериализатор
+                description='Доступ запрещен.'
+            ),
+        },
+        tags=['Аналитика'],
+    )
     def get(self, request):
         # 1. Находим задачи со статусом 'new', у которых есть подзадачи в статусе 'in_progress'
         important_tasks = Task.objects.filter(

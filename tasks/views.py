@@ -12,6 +12,7 @@ from .serializers import (
 
 
 class TaskViewSet(viewsets.ModelViewSet):
+    swagger_tags = ['Задачи'] # Не работает
     serializer_class = TaskSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]

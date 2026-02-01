@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
+
+from tasks.serializers import TaskSerializer
 from .models import CustomUser
 
 
@@ -55,3 +57,11 @@ class CustomUserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['full_name', 'position', 'email', 'telegram_id']
+
+
+class BusyEmployeeSerializer(serializers.Serializer):
+    employee_id = serializers.CharField()
+    full_name = serializers.CharField()
+    position = serializers.CharField()
+    active_tasks_count = serializers.IntegerField()
+    tasks = TaskSerializer(many=True)  # Используйте уже существующий TaskSerializer

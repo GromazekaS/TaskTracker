@@ -21,7 +21,7 @@ class TaskSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'created_by']
 
-    def get_executor_info(self, obj):
+    def get_executor_info(self, obj) -> dict | None:
         if obj.executor:
             return {
                 'employee_id': obj.executor.employee_id,
@@ -30,7 +30,7 @@ class TaskSerializer(serializers.ModelSerializer):
             }
         return None
 
-    def get_created_by_info(self, obj):
+    def get_created_by_info(self, obj) -> dict | None:
         if obj.created_by:
             return {
                 'employee_id': obj.created_by.employee_id,
@@ -95,3 +95,36 @@ class TaskStatusUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Только исполнитель или руководитель может менять статус задачи')
 
         return value
+
+class PotentialExecutorSerializer(serializers.Serializer):
+    employee_id = serializers.CharField()
+    full_name = serializers.CharField()
+    position = serializers.CharField()
+    reason = serializers.CharField()  # Например, 'Наименее загруженный сотрудник'
+
+# Сериализатор для краткой информации о задаче
+class ImportantTaskShortSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    priority = serializers.IntegerField()
+
+# Основной сериализатор для элемента ответа
+class ImportantTaskResponseSerializer(serializers.Serializer):
+    task = ImportantTaskShortSerializer()
+    deadline = serializers.DateTimeField()
+    potential_executors = PotentialExecutorSerializer(many=True)
+
+class ErrorDetailSerializer(serializers.Serializer):
+    """Сериализатор для стандартного формата ошибок DRF (detail)."""
+    detail = serializers.CharField()
+
+class AuthenticationErrorSerializer(serializers.Serializer):
+    """Сериализатор для ошибок аутентификации 401."""
+    # Для Basic/Session аутентификации DRF может возвращать 'detail'
+    # Но часто для 401 также может требоваться заголовок WWW-Authenticate
+    detail = serializers.CharField(default='Учетные данные не были предоставлены.')
+
+class PermissionErrorSerializer(serializers.Serializer):
+    """Сериализатор для ошибок доступа 403."""
+    detail = serializers.CharField(default='У вас недостаточно прав для выполнения этого действия.')

@@ -11,6 +11,7 @@ from .serializers import (
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
+    swagger_tags = ['Пользователи']
     queryset = CustomUser.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
