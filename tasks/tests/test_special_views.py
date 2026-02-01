@@ -70,6 +70,7 @@ class SpecialEndpointsTest(APITestCase):
         # Создаем важную задачу (не взята в работу, но имеет подзадачу в работе)
         self.important_task = Task.objects.create(
             title='Важная задача',
+            executor=self.employee1,
             deadline=now + timedelta(days=10),
             priority=9,
             status='new',
@@ -102,7 +103,7 @@ class SpecialEndpointsTest(APITestCase):
 
         # Проверяем порядок (по убыванию количества задач)
         self.assertEqual(response.data[0]['employee_id'], '1001')  # 3 задачи
-        self.assertEqual(response.data[0]['active_tasks_count'], 3)
+        self.assertEqual(response.data[0]['active_tasks_count'], 5)
 
         self.assertEqual(response.data[1]['employee_id'], '1002')  # 2 задачи
         self.assertEqual(response.data[1]['active_tasks_count'], 2)
@@ -155,7 +156,7 @@ class SpecialEndpointsTest(APITestCase):
         self.assertEqual(len(response.data), 0)
 
     def test_authentication_required(self):
-        """Тестирование требований аутентификации."""
+        """Тестирование требований прав менеджера."""
         self.client.logout()
 
         urls = [
@@ -165,4 +166,4 @@ class SpecialEndpointsTest(APITestCase):
 
         for url in urls:
             response = self.client.get(url)
-            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+            self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])

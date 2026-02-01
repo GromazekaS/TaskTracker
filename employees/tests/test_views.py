@@ -15,7 +15,8 @@ class CustomUserViewSetTest(APITestCase):
             full_name='Менеджер',
             position='Руководитель',
             role='manager',
-            password='manager123'
+            password='manager123',
+            is_staff = True
         )
 
         self.employee = CustomUser.objects.create_user(
@@ -58,7 +59,7 @@ class CustomUserViewSetTest(APITestCase):
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)  # manager + employee
+        self.assertEqual(response.data['count'], 2)  # manager + employee
 
     def test_user_list_as_employee(self):
         """Сотрудник не может видеть список пользователей."""

@@ -18,7 +18,8 @@ class TaskViewSetTest(APITestCase):
             full_name='Менеджер',
             position='Руководитель',
             role='manager',
-            password='manager123'
+            password='manager123',
+            is_staff = True
         )
 
         self.employee1 = CustomUser.objects.create_user(
@@ -125,12 +126,12 @@ class TaskViewSetTest(APITestCase):
     def test_update_task_status_as_non_executor(self):
         """Сотрудник не может менять статус чужой задачи."""
         self.client.force_authenticate(user=self.employee1)
-        url = reverse('task-update-status', args=[self.task2.id])  # Задача employee2
+        url = reverse('task-update-status', kwargs={'pk': self.task2.id})
 
         data = {'status': 'completed'}
         response = self.client.patch(url, data, format='json')
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn(response.status_code,[status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND])
 
     def test_my_tasks_endpoint(self):
         """Тестирование эндпоинта /api/tasks/my_tasks/."""

@@ -38,17 +38,22 @@ class CustomUserSerializerTest(TestCase):
             'employee_id': '1002',
             'full_name': 'Петров Петр',
             'position': 'Техник',
-            'password': 'Password123',
-            'password2': 'Password123',
+            'password': 'SecurePass123!@#',
+            'password2': 'SecurePass123!@#',
             'role': 'employee'
         }
+
+        serializer = CustomUserCreateSerializer(data=data)
+
+        if not serializer.is_valid():
+            print(f"Ошибки валидации: {serializer.errors}")
 
         serializer = CustomUserCreateSerializer(data=data)
         self.assertTrue(serializer.is_valid())
 
         user = serializer.save()
         self.assertEqual(user.employee_id, '1002')
-        self.assertTrue(user.check_password('Password123'))
+        self.assertTrue(user.check_password('SecurePass123!@#'))
 
     def test_user_create_serializer_password_mismatch(self):
         """Тестирование создания пользователя с несовпадающими паролями."""
